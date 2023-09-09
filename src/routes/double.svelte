@@ -25,7 +25,7 @@ async function doubleNumber() {
 }
 </script>
 
-<h1>Test Flask API</h1>
+<h1>double or nothing, maybe just double</h1>
 <input type="number" bind:value={inputNumber} />
 <button on:click={doubleNumber}>Submit</button>
 <p>{inputNumber}</p>

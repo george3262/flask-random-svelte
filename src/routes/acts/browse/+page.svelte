@@ -393,9 +393,16 @@ function openDrawer() {
     <div class="p-4 bg-primary-500 text-white">
       {#if selectedContent.title}
         <!-- Loop through the headings dictionary -->
-        {#each Object.entries(selectedContent) as [key, value]}
-          <p>{key}: {value}</p>
-        {/each}
+        <h3 class="h3 mx-4 my-2">{selectedContent.title}</h3>
+        {#if selectedContent.h2}<h5 class="h5 mx-4">{selectedContent.h2}</h5>{/if}
+        {#if selectedContent.h3}<p class="mx-4">{selectedContent.h3}</p>{/if}
+        {#if selectedContent.note}<p class="mx-4">{selectedContent.note}</p>{/if}
+        <div class="border border-primary-300 mx-4 p-2">
+          {#if selectedContent.text1}<p style="margin-left: 0px;">{selectedContent.text1}</p>{/if}
+          {#if selectedContent.text2}<p style="margin-left: 10px;">{selectedContent.text2}</p>{/if}
+          {#if selectedContent.text3}<p style="margin-left: 20px;">{selectedContent.text3}</p>{/if}
+          {#if selectedContent.text4}<p style="margin-left: 30px;">{selectedContent.text4}</p>{/if}
+      </div>
         <div class="flex justify-center items-center">
           <button type="button" class="btn variant-filled-secondary m-4">
             <a href="/hansards">Search Hansards</a>

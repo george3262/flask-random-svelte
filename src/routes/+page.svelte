@@ -1,13 +1,53 @@
-<!-- src/routes/index.svelte -->
 <script>
-    import RandomNumber from './RandomNumber.svelte';
-    import Double from './double.svelte';
-</script>
-  
-  <main>
-    <h1>Hello SvelteKit!</h1>
-    <RandomNumber />
+    import { AppShell } from '@skeletonlabs/skeleton';
+    import { searchActsInput, searchHansardsInput, passActContent } from './store'
 
-    <Double />
-  </main>
-  
+    let inputText = "If a major fish stock has declined to or below its limit reference point";
+
+    function searchActs(){
+        searchActsInput.set(inputText);
+        passActContent.set({});
+    };
+
+    function searchHansards(){
+        searchHansardsInput.set(inputText);
+        passActContent.set({});
+    };
+
+    </script>
+
+<AppShell>
+        <div class="vertical-center">
+            <div class="container mx-auto mt-10 mb-6 px-5">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                <textarea bind:value={inputText} 
+                    class="textarea p-3 border border-primary-500" rows="1" 
+                    placeholder="search" 
+                    style="width: 70%; min-width: 450px;"></textarea>
+                <div class="button-container">
+                    <button class="btn btn-lg variant-filled-secondary m-3" on:click={searchActs}>
+                        <a href="/acts/search">Search Acts</a>
+                    </button>
+                    <button class="btn btn-lg variant-filled-secondary m-3" on:click={searchHansards}>
+                        <a href="/hansards">Search Hansards</a>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+</AppShell>
+
+<style>
+    /* Style to center content vertically and move it down by 30% */
+    .vertical-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Move content to the top of the viewport */
+    align-items: center;
+    height: 10vh; /* Full viewport height */
+}
+    /* Add margin-top to push content down by 30% */
+    .container {
+      margin-top: 20vh; /* 30% of viewport height */
+    }
+</style>

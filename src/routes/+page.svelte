@@ -2,7 +2,7 @@
     import { AppShell } from '@skeletonlabs/skeleton';
     import { searchActsInput, searchHansardsInput, passActContent } from './store'
 
-    let inputText = "If a major fish stock has declined to or below its limit reference point";
+    let inputText = "";
 
     function searchActs(){
         searchActsInput.set(inputText);

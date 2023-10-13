@@ -184,8 +184,5 @@
 </section>
 {/if}
 
-<svelte:fragment slot="pageFooter">
-<p>test</p>
-</svelte:fragment>
 
 </AppShell>

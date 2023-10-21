@@ -21,7 +21,7 @@
 
 <AppShell>
     <div class="vertical-center">
-        <div class="container mx-auto mt-10 mb-6 px-5">
+        <div class="container mx-auto mt-10 dmb-6 px-5">
             <div style="display: flex; flex-direction: column; align-items: center;">
                 <textarea bind:value={inputText} 
                     class="textarea p-3 border border-primary-500" rows="1" 
@@ -29,13 +29,11 @@
                     style="width: 70%; min-width: 450px;"></textarea>
                 <div class="button-container">
                     <button class="btn btn-lg variant-filled-secondary m-3" 
-                        on:click={searchActs}
-                        {inputText === "" ? 'disabled' : ''}>
+                        on:click={searchActs}>
                         <a href="/acts/search">Search Acts</a>
                     </button>
                     <button class="btn btn-lg variant-filled-secondary m-3" 
-                        on:click={searchHansards}
-                        {inputText === "" ? 'disabled' : ''}>
+                        on:click={searchHansards}>
                         <a href="/hansards">Search Hansards</a>
                     </button>
                 </div>

@@ -114,12 +114,14 @@
     }
 
     async function checkHocSenCom(){
-        searchHansardsInput.set(inputText);
-        searchHansardsInputCurrent.set(inputText);
-        hocContent.set(null);
-        senContent.set(null);
-        await checkHOC();
-        await checkSEN();
+        if (inputText !== "") {
+            searchHansardsInput.set(inputText);
+            searchHansardsInputCurrent.set(inputText);
+            hocContent.set(null);
+            senContent.set(null);
+            await checkHOC();
+            await checkSEN();
+        }
     }
 
     async function checkHOC() {

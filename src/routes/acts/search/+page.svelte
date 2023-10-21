@@ -30,46 +30,48 @@
         }
 
     async function embedText() {
-        searchActsInput.set(inputText)
-        searchActsInputCurrent.set(inputText)
-        isLoading = true;
-        try {
-        // Initialize the request body
-        const requestBody = { text: inputText };
-    
-        // Perform your text embedding search using the request body
-        const response = await fetch('https://flask-production-8d81.up.railway.app/act_vec', {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-        });
-    
-        if (response.ok) {
-            const embeddingResults = await response.json();
-            error = null;
-    
-            // Fetch and store data for all results
-            const fetchResults = await Promise.all(
-            embeddingResults.map(async (result) => {
-                const data = await fetchSupabaseData(result.identifier, 'acts');
-                return { ...result, supabaseData: data };
-            })
-            );
-            results = fetchResults;
-            searchedActContent.set(results);
-        } else {
+        if (inputText !== "") {
+            searchActsInput.set(inputText)
+            searchActsInputCurrent.set(inputText)
+            isLoading = true;
+            try {
+            // Initialize the request body
+            const requestBody = { text: inputText };
+        
+            // Perform your text embedding search using the request body
+            const response = await fetch('https://flask-production-8d81.up.railway.app/act_vec', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+        
+            if (response.ok) {
+                const embeddingResults = await response.json();
+                error = null;
+        
+                // Fetch and store data for all results
+                const fetchResults = await Promise.all(
+                embeddingResults.map(async (result) => {
+                    const data = await fetchSupabaseData(result.identifier, 'acts');
+                    return { ...result, supabaseData: data };
+                })
+                );
+                results = fetchResults;
+                searchedActContent.set(results);
+            } else {
+                results = null;
+                error = `Failed to fetch data. Status code: ${response.status}`;
+                console.error('Error:', error);
+            }
+            } catch (err) {
+            console.error('Error:', err);
             results = null;
-            error = `Failed to fetch data. Status code: ${response.status}`;
-            console.error('Error:', error);
-        }
-        } catch (err) {
-        console.error('Error:', err);
-        results = null;
-        error = 'An error occurred while fetching data.';
-        } finally {
-        isLoading = false;
+            error = 'An error occurred while fetching data.';
+            } finally {
+            isLoading = false;
+            }
         }
     }
 

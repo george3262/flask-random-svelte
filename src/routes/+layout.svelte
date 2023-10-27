@@ -16,7 +16,8 @@
 	<svelte:fragment slot="header">
   <AppBar shadow="shadow-2xl">
     <h1 class="h1 flex-none m-3 self-center">
-      <a href="/">getHanswers</a>
+      <a href="/"><span class="text-secondary-500">get</span><span class="text-primary-500">Hanswers</span></a>
+      
     </h1>
     <svelte:fragment slot="trail">
       <div class="flex-auto flex justify-end">

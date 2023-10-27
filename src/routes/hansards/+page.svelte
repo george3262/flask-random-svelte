@@ -5,6 +5,7 @@
     import { passActContent, hocContent, senContent, searchHansardsInput, searchHansardsInputCurrent } from "../store.js"
     import { onMount } from 'svelte';
     import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
+    import { Accordion, AccordionItem } from '@skeletonlabs/skeleton';
 
     let check_results = null;
     let hoc_results = null;
@@ -21,6 +22,11 @@
     let inputText = "";
     let currentInputText = "";
     let recommendedBills = null;
+    let content = "";
+    let contentXML = "";
+    let formattedHTML = "";
+    let groupedContent = null;
+
 
     function filter(item) {
         recommendedBills[item].selected = !recommendedBills[item].selected;
@@ -147,21 +153,27 @@
                 fetchResults = await Promise.all(
                     embeddingResults.map(async (result) => {
                         const data = await fetchSupabaseData(result.identifier, 'hoc');
-                        return { ...result, supabaseData: data };
+                        // const content = await contentSet(data.intervention_id); // Fetch content
+                        if (content !== null) {
+                            result.supabaseData = data;
+                            // result.supabaseData.content = content; // Append content to supabaseData
+                        }
+                        return result;
                     })
                 );
+
                 hocContent.set(fetchResults);
-                console.log(fetchResults)
+                console.log(fetchResults);
             } else {
                 error = `Failed to fetch data. Status code: ${response.status}`;
                 console.error('Error:', error);
             }
-            } catch (err) {
-                console.error('Error:', err);
-                error = 'An error occurred while fetching data.';
-            } finally {
-                isLoading = false;
-            }
+        } catch (err) {
+            console.error('Error:', err);
+            error = 'An error occurred while fetching data.';
+        } finally {
+            isLoading = false;
+        }
     }
 
     async function checkSEN() {
@@ -270,7 +282,7 @@
     }
 
     function formatDate(inputDate) {
-        const dateParts = inputDate.split('/');
+        const dateParts = inputDate.split('-');
         const year = parseInt(dateParts[0], 10);
         const month = parseInt(dateParts[1], 10);
         const day = parseInt(dateParts[2], 10);
@@ -285,6 +297,142 @@
         return formattedDate;
     }
 
+    async function fetchSupabaseXML(parliament, sitting) {
+        let id;
+        if (sitting.length === 2) {
+            id = parliament + "-0" + sitting;
+        } else {
+            id = parliament + "-" + sitting;
+        }
+        try {
+            const { data, error } = await supabase
+            .from('hoc_xml')
+            .select('xml')
+            .eq('id', id);
+    
+            if (error) {
+            console.error('Error fetching data:', error.message);
+            return null;
+            }
+    
+            // Return the "text" column value if data exists
+            if (data.length > 0) {
+                contentXML = data[0].xml;
+                formattedHTML = formatXML(contentXML);
+                groupedContent = groupContentByTitles(formattedHTML)
+                console.log(groupedContent)
+            } else {
+            return null; // No data found for the given intervention_id
+            }
+        } catch (error) {
+            console.error('An error occurred:', error);
+            return null;
+        }
+    }
+
+ // Define a mapping from XML tag names to HTML tag names
+    const tagMapping = {
+            'HansardBody': 'div',
+            'Intro': 'div',
+            'ParaText': 'p class="pb-3" style="margin-left: 30px;"',
+            'OrderOfBusiness': 'div',
+            'OrderOfBusinessTitle': 'h3 class="h3"',
+            'CatchLine': 'p',
+            'SubjectOfBusiness': 'div',
+            'Timestamp': 'p',
+            'FloorLanguage': 'p',
+            'SubjectOfBusinessTitle': 'h4 class="h4"',
+            'SubjectOfBusinessQualifier': 'h4 class="h4"',
+            'SubjectOfBusinessContent': 'div',
+            'Intervention': 'div',
+            'PersonSpeaking': 'p style="margin-left: 15px; font-weight: bold;"',
+            'Affiliation': 'span',
+            'Content': 'div',
+            'ProceduralText': 'p',
+            'I': "span"
+            // Add more mappings as needed
+        };
+    
+    const tagsToSkip = ['Prayer'];
+
+    function formatXML(xmlContent) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, "text/xml");
+
+        // Find the "HansardBody" tag and start processing from there
+        const hansardBody = xmlDoc.querySelector('HansardBody');
+        if (hansardBody) {
+            // Convert XML to HTML starting from "HansardBody"
+            return convertXMLToHTML(hansardBody);
+        } else {
+            return 'HansardBody tag not found in XML.';
+        }
+        
+    }
+
+    function convertXMLToHTML(node) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const tagName = node.tagName;
+
+            // Check if the tag name is in the list of tags to skip
+            if (tagsToSkip.includes(tagName)) {
+                // If the tag is in the list of tags to skip, return an empty string
+                return '';
+            }
+
+            // Check if the tag name is in your mapping
+            if (tagMapping.hasOwnProperty(tagName)) {
+                const mappedTagName = tagMapping[tagName];
+                const openTag = `<${mappedTagName}>`;
+                const closeTag = `</${mappedTagName}>`;
+                let content = '';
+
+                // Recursively process child nodes
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    content += convertXMLToHTML(node.childNodes[i]);
+                }
+
+                return `${openTag}${content}${closeTag}`;
+            }
+        } else if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent.trim();
+            return text.length > 0 ? `${text}` : '';
+        }
+
+        return '';
+    }
+
+    function groupContentByTitles(formattedHTML) {
+        // Parse the HTML into a DOM tree
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(formattedHTML, 'text/html');
+
+        // Create an array to store grouped content
+        const groupedContent = [];
+
+        // Iterate through the content elements and group them by titles
+        let currentTitle = null;
+        doc.querySelectorAll('h3.h3').forEach((titleElement) => {
+            currentTitle = titleElement.textContent;
+            const titleWithElement = {
+            title: titleElement,
+            content: []
+            };
+            let nextElement = titleElement.nextElementSibling;
+            while (nextElement && nextElement.tagName !== 'H3') {
+            titleWithElement.content.push(nextElement);
+            nextElement = nextElement.nextElementSibling;
+            }
+            groupedContent.push(titleWithElement);
+        });
+
+        return groupedContent;
+    }
+
+    function capitalizeFirstLetter(text) {
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    }
+
     onMount(async () => {
         if (inputText !== currentInputText) {
             await checkHocSenCom();
@@ -293,7 +441,6 @@
             await findRecommendedBills();
         }
     });
-    
     
     </script>
 
@@ -412,24 +559,57 @@
     </div>
     {/if}
 
-
     {#if hoc_results !== null && selectedHocSenCom == 'HOC'}
     <section class="flex flex-col justify-center mx-20 my-3">  
-    {#each hoc_results as result}
-    <div class="bg-tertiary-500 my-2 shadow-xl p-2">
-        <p class="mb-1"><strong>{#if result.supabaseData.date}{formatDate(result.supabaseData.date)}{/if}</strong></p>
-        <p class="mb-1"><strong>Parliament:</strong> {result.supabaseData.parliament} {#if result.supabaseData.bill} <strong>Bill:</strong> {result.supabaseData.bill}{/if}</p>
-        <p class="mb-1"><strong>Speaker:</strong> {#if result.supabaseData.speaker}{result.supabaseData.speaker}{/if}</p>
-        <p>{#if result.supabaseData.text}{result.supabaseData.text}{/if}</p>
-    </div>
+        <Accordion>
+        {#each hoc_results as result}
+                <div class="bg-tertiary-500 my-2 shadow-xl p-2">
+                    <AccordionItem on:click={() => fetchSupabaseXML(result.supabaseData.parliament, result.supabaseData.sitting)}>
+                        <svelte:fragment slot="summary">
+                            <p class="mb-1"><strong>{formatDate(result.supabaseData.date)}, Parliament: {result.supabaseData.parliament}, Sitting: {result.supabaseData.sitting}</strong></p>
+                            <p class="mb-1"> {#if result.supabaseData.bill} <strong>{result.supabaseData.bill}</strong>{/if}</p>
+                            <p class="mb-1"><strong>{result.supabaseData.heading_title} - {result.supabaseData.sub_title} - {result.supabaseData.procedural_text} - {result.supabaseData.sub_qualifier}</strong></p>
+                            <!-- <p class="mb-1"><strong>{result.supabaseData.id}</strong></p> -->
+                            <p class="mb-1"><strong>Speaker:</strong> {#if result.supabaseData.speaker}{result.supabaseData.speaker}{/if}</p>
+                            <p>{#if result.supabaseData.text}{result.supabaseData.text}{/if}</p>
+                        </svelte:fragment>
+
+                        <svelte:fragment slot="content">
+                            {#if groupedContent}
+                                <Accordion>
+                                        {#each groupedContent as rowContent}
+                                        <div class="card p-4 max-h-[600px] overflow-auto space-y-4">
+                                            <AccordionItem>
+                                                <svelte:fragment slot="summary">
+                                                    <h4 class="h4">{@html capitalizeFirstLetter(rowContent.title.innerHTML)}</h4>
+                                                </svelte:fragment>
+
+                                                <svelte:fragment slot="content">
+                                                    {#each rowContent.content as contentItem}
+                                                        <p>{@html contentItem.outerHTML}</p>
+                                                    {/each}
+                                                </svelte:fragment>
+                                            </AccordionItem>
+                                        </div>
+                                        {/each}
+                                </Accordion>
+                            {/if}
+                        </svelte:fragment>
+                    </AccordionItem>
+                </div>
+            
         {/each}
+    </Accordion>
     </section> 
+
     {/if}
+
 
     {#if sen_results !== null && selectedHocSenCom == 'SEN'}
     <section class="flex flex-col justify-center mx-20 my-3">  
     {#each sen_results as result}
     <div class="bg-tertiary-500 my-2 shadow-xl p-2">
+
         <p class="mb-1"><strong>{#if result.supabaseData.date}{formatDate(result.supabaseData.date)}{/if}</strong></p>
         <p class="mb-1"><strong>Parliament:</strong> {result.supabaseData.gov} {#if result.supabaseData.bill} <strong>Bill:</strong> {result.supabaseData.bill}{/if}</p>
         <p class="mb-1"><strong>Speaker:</strong> {#if result.supabaseData.speaker}{result.supabaseData.speaker}{/if}</p>
@@ -441,14 +621,3 @@
 
     </AppShell>
 
-    <style>
-        .vertical-items {
-            display: flex;
-            flex-direction: column;
-        }
-    
-        .horizontal-items {
-            display: flex;
-            flex-wrap: wrap;
-        }
-    </style>

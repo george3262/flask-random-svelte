@@ -296,7 +296,6 @@ function toggleDrawer(text, headings) {
                         'text3': null,
                         'text4': null
                     }
-
     )
   }
 }
